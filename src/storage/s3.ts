@@ -10,6 +10,8 @@ export class S3Backend implements StorageBackend {
   private clientPromise: Promise<any>;
   private bucket: string;
   private publicBase?: string;
+  // 변수 specifier로 동적 import → 미설치 시에도 typecheck 통과
+  private readonly s3Mod = "@aws-sdk/client-s3";
 
   constructor() {
     this.bucket = process.env.S3_BUCKET ?? "";
@@ -21,7 +23,7 @@ export class S3Backend implements StorageBackend {
     if (!this.bucket) throw new Error("S3_BUCKET 환경변수가 필요합니다.");
     let S3Client: any;
     try {
-      ({ S3Client } = await import("@aws-sdk/client-s3"));
+      ({ S3Client } = await import(this.s3Mod));
     } catch {
       throw new Error("@aws-sdk/client-s3 미설치. `npm i @aws-sdk/client-s3` 후 사용하세요.");
     }
@@ -40,7 +42,7 @@ export class S3Backend implements StorageBackend {
 
   async save(key: string, png: Buffer): Promise<StorageResult> {
     const client = await this.clientPromise;
-    const { PutObjectCommand } = await import("@aws-sdk/client-s3");
+    const { PutObjectCommand } = await import(this.s3Mod);
     const objectKey = `${key}.png`;
     await client.send(
       new PutObjectCommand({

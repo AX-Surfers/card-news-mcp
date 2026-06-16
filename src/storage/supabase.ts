@@ -20,8 +20,9 @@ export class SupabaseBackend implements StorageBackend {
       throw new Error("SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY 환경변수가 필요합니다.");
     }
     let createClient: any;
+    const supabaseMod = "@supabase/supabase-js";
     try {
-      ({ createClient } = await import("@supabase/supabase-js"));
+      ({ createClient } = await import(supabaseMod));
     } catch {
       throw new Error("@supabase/supabase-js 미설치. `npm i @supabase/supabase-js` 후 사용하세요.");
     }

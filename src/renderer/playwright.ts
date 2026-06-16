@@ -7,22 +7,27 @@ let browser: Browser | null = null;
 async function getBrowser(): Promise<Browser> {
   if (browser?.isConnected()) return browser;
 
+  let launched: Browser;
   if (IS_VERCEL) {
     // 서버리스 환경: @sparticuz/chromium + playwright-core (optional deps)
-    const chromiumPkg = (await import("@sparticuz/chromium")).default;
-    const { chromium: playwrightCore } = await import("playwright-core");
+    // 변수 specifier로 동적 import → 미설치 시에도 typecheck 통과
+    const sparticuzMod = "@sparticuz/chromium";
+    const coreMod = "playwright-core";
+    const chromiumPkg = (await import(sparticuzMod)).default;
+    const { chromium: playwrightCore } = await import(coreMod);
     const executablePath = await chromiumPkg.executablePath();
-    browser = await playwrightCore.launch({
+    launched = await playwrightCore.launch({
       args: chromiumPkg.args,
       executablePath,
       headless: true,
     });
   } else {
     // 로컬: 번들된 Chromium 사용
-    browser = await playwrightChromium.launch({ headless: true });
+    launched = await playwrightChromium.launch({ headless: true });
   }
 
-  return browser;
+  browser = launched;
+  return launched;
 }
 
 export async function renderHtmlToPng(html: string): Promise<Buffer> {
