@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Render smoke test (default + surfers)
+        run: |
+          npm run test:render default
+          npm run test:render surfers
+
+      - name: Verify outputs exist
+        run: |
+          test -f card-news-out/test-default/0_thumbnail.png
+          test -f card-news-out/test-surfers/3_closing.png
+          echo "✓ render smoke test passed"
