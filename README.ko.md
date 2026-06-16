@@ -120,7 +120,24 @@ Claude Desktop, Cursor 같은 MCP 클라이언트(AI 에이전트)에게
 | `local` (기본) | `OUTPUT_DIR`에 PNG 저장 + base64도 반환 | 없음 |
 | `base64` | base64 data URI만 반환 (파일 저장 안 함) | 없음 |
 | `supabase` | Supabase Storage 업로드 → 공개 URL 반환 | `npm i @supabase/supabase-js`, `SUPABASE_URL`·`SUPABASE_SERVICE_ROLE_KEY` 설정 |
-| `s3` | S3 / Cloudflare R2 업로드 | `npm i @aws-sdk/client-s3`, `S3_*` 변수 설정 |
+| `s3` | S3 / Cloudflare R2 업로드 → 공개 URL 반환 | `npm i @aws-sdk/client-s3`, `S3_*` 변수 설정 |
+
+### Cloudflare R2 (S3 호환)
+
+R2는 무료 한도가 넉넉합니다 (스토리지 10 GB, **egress 무료**). `s3` 백엔드로 그대로
+동작하며, `S3_ENDPOINT`만 R2로 지정하면 됩니다:
+
+```bash
+STORAGE_BACKEND=s3
+S3_BUCKET=card-news
+S3_ENDPOINT=https://<account_id>.r2.cloudflarestorage.com
+S3_ACCESS_KEY_ID=<R2 토큰 키>
+S3_SECRET_ACCESS_KEY=<R2 토큰 시크릿>
+S3_REGION=auto
+S3_PUBLIC_BASE_URL=https://<R2 공개 도메인>   # r2.dev URL 또는 커스텀 도메인
+```
+
+버킷에 공개 접근(r2.dev 또는 커스텀 도메인)을 켜야 반환된 URL을 외부에서 불러올 수 있습니다.
 
 ## 환경변수 정리
 

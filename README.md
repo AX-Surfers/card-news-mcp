@@ -124,7 +124,25 @@ Choose with `STORAGE_BACKEND`:
 | `local` (default) | Saves PNGs to `OUTPUT_DIR`, also returns base64 | none |
 | `base64` | Returns base64 data URIs only (no files) | none |
 | `supabase` | Uploads to Supabase Storage, returns public URL | `npm i @supabase/supabase-js`, set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` |
-| `s3` | Uploads to S3 / Cloudflare R2 | `npm i @aws-sdk/client-s3`, set `S3_*` vars |
+| `s3` | Uploads to S3 / Cloudflare R2, returns public URL | `npm i @aws-sdk/client-s3`, set `S3_*` vars |
+
+### Cloudflare R2 (S3-compatible)
+
+R2 has a generous free tier (10 GB storage, **free egress**). It works through the
+`s3` backend — just point `S3_ENDPOINT` at R2:
+
+```bash
+STORAGE_BACKEND=s3
+S3_BUCKET=card-news
+S3_ENDPOINT=https://<account_id>.r2.cloudflarestorage.com
+S3_ACCESS_KEY_ID=<R2 token key>
+S3_SECRET_ACCESS_KEY=<R2 token secret>
+S3_REGION=auto
+S3_PUBLIC_BASE_URL=https://<your-r2-public-domain>   # r2.dev URL or custom domain
+```
+
+Enable public access (r2.dev or a custom domain) on the bucket so the returned URLs
+are publicly fetchable.
 
 ## Configuration (env vars)
 
