@@ -149,6 +149,31 @@ MCP_TRANSPORT=http npx card-news-mcp
 - **한글/CJK 글자가 깨짐.** 테마는 Pretendard 웹폰트를 불러옵니다. 첫 렌더링 시
   인터넷 연결이 되어 있는지 확인하거나, 테마에 로컬 폰트를 포함하세요.
 
+## Hermes 에이전트 연동
+
+Hermes 에이전트(또는 MCP 설정을 직접 관리하는 에이전트)로 돌린다면 아래 프롬프트를 복사해서 쓰세요.
+
+### 1. MCP 설치 / 등록 프롬프트
+
+> `card-news`라는 이름으로 MCP 서버를 새로 등록해줘.
+> - 트랜스포트: **stdio** — 커맨드 `npx`, args `["-y", "card-news-mcp"]`.
+>   (네트워크로 자체 호스팅한다면 `MCP_TRANSPORT=http npx card-news-mcp`로 띄우고
+>   URL `http://<host>:3000/mcp`를 등록해.)
+> - 환경변수: `THEME=default`, `STORAGE_BACKEND=local`, `OUTPUT_DIR=./card-news-out`.
+>   (공개 URL이 필요하면 `STORAGE_BACKEND=supabase` 또는 `s3`와 해당 키를 설정.)
+> - 등록 후 툴 목록을 출력하고 `render_card_news`가 있는지 확인해줘.
+
+### 2. 카드뉴스 제작 프롬프트
+
+> **{{주제}}** 에 대한 {{N}}장짜리 인스타 캐러셀을 `render_card_news`를 호출해서 만들어줘.
+> - 0번 카드 = `thumbnail` (카테고리 뱃지 + 임팩트 있는 제목).
+> - 1 ~ N-2번 카드 = `body` (카드마다 핵심 포인트 하나씩, `page_number` 포함).
+> - 마지막 카드 = `closing` (팔로우 / 저장 유도 CTA).
+> - 카피는 네가 직접 작성하고, 제목은 짧게 본문은 한눈에 읽히게.
+> - 배경 이미지: {{이미지 URL들 또는 "어울리는 스톡 이미지를 골라"}}.
+> - 테마: `{{default | surfers | 내-테마}}`.
+> 각 카드의 저장 경로(또는 URL)를 돌려줘.
+
 ## 개발
 
 ```bash

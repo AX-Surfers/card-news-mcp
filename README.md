@@ -153,6 +153,32 @@ MCP_TRANSPORT=http npx card-news-mcp
 - **Korean / CJK text looks wrong.** Themes load the Pretendard web font; ensure the
   rendering machine has internet access on first render, or bundle a local font in your theme.
 
+## Using with a Hermes agent
+
+If you drive this through a Hermes agent (or any agent that manages its own MCP
+config), copy-paste the prompts below.
+
+### 1. Install / register the MCP
+
+> Register a new MCP server named `card-news`.
+> - Transport: **stdio** — command `npx`, args `["-y", "card-news-mcp"]`.
+>   (If you self-host over the network instead, run `MCP_TRANSPORT=http npx card-news-mcp`
+>   and register the URL `http://<host>:3000/mcp`.)
+> - Env: `THEME=default`, `STORAGE_BACKEND=local`, `OUTPUT_DIR=./card-news-out`.
+>   (Use `STORAGE_BACKEND=supabase` or `s3` with the matching keys if you want public URLs.)
+> - After registering, list the tools and confirm `render_card_news` is available.
+
+### 2. Create a card-news carousel
+
+> Make a {{N}}-card Instagram carousel about **{{TOPIC}}** by calling `render_card_news`.
+> - Card 0 = `thumbnail` (category badge + a punchy title).
+> - Cards 1..N-2 = `body` (one key point each, with `page_number`).
+> - Last card = `closing` (follow / save CTA).
+> - Write all copy yourself; keep titles short and body text scannable.
+> - Background images: {{IMAGE_URLS or "pick fitting stock images"}}.
+> - Theme: `{{default | surfers | your-theme}}`.
+> Return the saved file paths (or URLs) for each card.
+
 ## Development
 
 ```bash
