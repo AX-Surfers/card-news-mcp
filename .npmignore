@@ -1,0 +1,10 @@
+src/
+test-out/
+card-news-out/
+.env
+.env.example
+tsconfig.json
+vercel.json
+ecosystem.config.cjs
+.github/
+.DS_Store

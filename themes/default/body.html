@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=720, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 720px;
+    height: 720px;
+    overflow: hidden;
+    font-family: '{{font}}', 'Pretendard', 'Noto Sans KR', sans-serif;
+    position: relative;
+  }
+
+  .bg-image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+  }
+
+  /* 하단 텍스트 영역만 강하게 딤 처리 */
+  .overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba(11,18,32,0.0) 0%,
+      rgba(11,18,32,0.0) 40%,
+      rgba(11,18,32,0.88) 56%,
+      rgba(11,18,32,0.97) 100%
+    );
+    z-index: 1;
+  }
+
+  .content {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 0 44px 54px;
+  }
+
+  /* 원형 숫자 뱃지 — 브랜드 블루 */
+  .page-badge {
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    background: {{primary_color}};
+    color: #ffffff;
+    font-size: 25px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 22px;
+    box-shadow: 0 4px 16px rgba(5,115,240,0.4);
+  }
+
+  .heading {
+    font-size: 41px;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.26;
+    letter-spacing: -0.035em;
+    word-break: keep-all;
+    margin-bottom: 18px;
+  }
+
+  /* 옐로 액센트 밑줄 */
+  .accent-underline {
+    width: 48px;
+    height: 4px;
+    background: {{accent_color}};
+    border-radius: 3px;
+    margin-bottom: 22px;
+  }
+
+  .body-text {
+    font-size: 20px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.92);
+    line-height: 1.72;
+    word-break: keep-all;
+    white-space: pre-line;
+  }
+
+  /* 우하단 브랜드 이미지 */
+  .brand-bottom {
+    position: absolute;
+    right: 44px;
+    bottom: 28px;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+  }
+
+  .brand-bottom img {
+    height: 20px;
+    width: auto;
+    object-fit: contain;
+    opacity: 0.9;
+  }
+</style>
+</head>
+<body>
+  {{#if image_url}}
+  <img class="bg-image" src="{{image_url}}" alt="">
+  {{else}}
+  <div class="bg-image" style="background: linear-gradient(135deg, #0573F0 0%, #0a2540 100%);"></div>
+  {{/if}}
+
+  <div class="overlay"></div>
+
+  <div class="content">
+    <div class="page-badge">{{page_number}}</div>
+    <h2 class="heading">{{title}}</h2>
+    <div class="accent-underline"></div>
+    <p class="body-text">{{body}}</p>
+  </div>
+
+  <div class="brand-bottom">
+    <img src="{{brand_image}}" alt="{{brand_name}}">
+  </div>
+</body>
+</html>

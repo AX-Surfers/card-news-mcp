@@ -1,0 +1,12 @@
+{
+  "name": "default",
+  "primary_color": "#404040",
+  "accent_color": "#d4d4d4",
+  "ink_color": "#171717",
+  "closing_tint": "rgba(245,245,245,0.96)",
+  "font": "Pretendard",
+  "brand_name": "BRAND",
+  "logo_icon": "assets/logo-icon.svg",
+  "wordmark": "assets/logo-wordmark.svg",
+  "brand_image": "assets/brand-image.svg"
+}

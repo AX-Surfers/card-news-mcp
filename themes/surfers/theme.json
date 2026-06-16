@@ -1,0 +1,12 @@
+{
+  "name": "surfers",
+  "primary_color": "#0573F0",
+  "accent_color": "#DCEEFF",
+  "ink_color": "#1B1D1F",
+  "closing_tint": "rgba(220,238,255,0.95)",
+  "font": "Pretendard",
+  "brand_name": "SURFERS",
+  "logo_icon": "assets/logo-icon.svg",
+  "wordmark": "assets/logo-wordmark.svg",
+  "brand_image": "assets/brand-image.svg"
+}

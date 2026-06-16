@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "card-news": {
+      "command": "npx",
+      "args": ["-y", "card-news-mcp"],
+      "env": {
+        "THEME": "surfers",
+        "STORAGE_BACKEND": "base64"
+      }
+    }
+  }
+}
