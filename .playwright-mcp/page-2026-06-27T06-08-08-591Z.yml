@@ -1,0 +1,16 @@
+- generic [ref=e3]:
+  - navigation [ref=e4]:
+    - generic [ref=e5]: Card News Studio
+    - link "갤러리" [ref=e6] [cursor=pointer]:
+      - /url: /
+    - link "워크플로우" [ref=e7] [cursor=pointer]:
+      - /url: /workflows
+    - link "템플릿" [ref=e8] [cursor=pointer]:
+      - /url: /templates
+    - link "설정" [ref=e9] [cursor=pointer]:
+      - /url: /settings
+  - main [ref=e10]:
+    - generic [ref=e11]:
+      - heading "템플릿" [level=1] [ref=e12]
+      - paragraph [ref=e14]: 템플릿이 없습니다.
+      - paragraph [ref=e15]: 템플릿 업로드는 다음 버전에서 지원됩니다.

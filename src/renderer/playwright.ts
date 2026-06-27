@@ -30,21 +30,30 @@ async function getBrowser(): Promise<Browser> {
   return launched;
 }
 
+// 디자인 기준 720×900 (4:5), deviceScaleFactor 1.5로 1080×1350 출력 (인스타 4:5 권장 해상도)
+const CARD_CSS_WIDTH = 720;
+const CARD_CSS_HEIGHT = 900;
+const CARD_SCALE = 1.5;
+
 export async function renderHtmlToPng(html: string): Promise<Buffer> {
   const b = await getBrowser();
-  const page = await b.newPage();
+  const context = await b.newContext({
+    viewport: { width: CARD_CSS_WIDTH, height: CARD_CSS_HEIGHT },
+    deviceScaleFactor: CARD_SCALE,
+  });
+  const page = await context.newPage();
   try {
-    await page.setViewportSize({ width: 720, height: 720 });
     await page.setContent(html, { waitUntil: "networkidle" });
     // 폰트/이미지 로딩 대기
     await page.waitForTimeout(300);
     const screenshot = await page.screenshot({
       type: "png",
-      clip: { x: 0, y: 0, width: 720, height: 720 },
+      clip: { x: 0, y: 0, width: CARD_CSS_WIDTH, height: CARD_CSS_HEIGHT },
     });
     return Buffer.from(screenshot);
   } finally {
     await page.close();
+    await context.close();
   }
 }
 
