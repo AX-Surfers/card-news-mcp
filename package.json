@@ -3,7 +3,16 @@
   "version": "1.0.0",
   "description": "MCP server that renders Instagram-style square card news (720x720 PNG) from text + images, with themeable branding and pluggable storage.",
   "type": "module",
-  "main": "dist/server.js",
+  "main": "dist/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./server": {
+      "import": "./dist/server.js"
+    }
+  },
   "bin": {
     "card-news-mcp": "dist/cli.js"
   },
