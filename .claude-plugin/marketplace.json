@@ -1,0 +1,30 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "cardnews",
+  "description": "Card news automation plugin marketplace",
+  "owner": {
+    "name": "Rillmo",
+    "email": "maxman306@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "card-news",
+      "description": "Build Instagram-style card news (1080x1350 PNG) end-to-end: research, copy, image crawl, local render, Notion save, Slack review, and IG/Threads publish.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Rillmo",
+        "email": "maxman306@gmail.com"
+      },
+      "source": "./",
+      "category": "content",
+      "license": "MIT",
+      "keywords": [
+        "card-news",
+        "instagram",
+        "threads",
+        "social-media",
+        "content-automation"
+      ]
+    }
+  ]
+}
