@@ -2,36 +2,45 @@
 
 > 🇰🇷 한국어 문서는 [README.ko.md](./README.ko.md) 를 보세요.
 
-A **Claude Code plugin** that turns a topic into a post-ready **Instagram-style card
-news** carousel (1080×1350 PNG) — thumbnail, body pages, and a closing
-call-to-action card — all themeable.
+A **Claude Code plugin** that produces post-ready **Instagram-style card news**
+carousels (1080×1350 PNG) — from picking a topic all the way to publishing on
+Instagram and Threads. It ships the whole automation pipeline as **composable
+skills** you can run end-to-end or piece by piece.
 
-It ships **composable skills** covering the full automation pipeline:
+Built for **SURFERS** (AI·AX offline education) — the default chain picks an
+AI/LLM topic, writes beginner-friendly Korean copy, renders in the SURFERS brand
+theme, archives to a team wiki, and auto-publishes. Swap the theme and sources to
+retarget it to your own brand.
 
-| # | Skill | Does |
-|---|-------|------|
-| 1 | `cardnews-research` | gather + synthesize sources for a topic |
-| 2 | `cardnews-copy` | write the render spec — **schema + lint gated** |
-| 3 | `cardnews-image` | source images: priority 1 the topic's own article/links, priority 2 Google/Unsplash crawl |
-| 4 | `cardnews-render` | render 1080×1350 PNGs locally (Playwright), SURFERS theme |
-| 5 | `cardnews-wiki` | archive note + PNGs into the llm-wiki git repo and push |
-| 6 | `cardnews-autopublish` | publish IG + Threads carousel via the local runtime, approval-manifest gated |
-| — | `cardnews-workflow` | orchestrate all of the above end-to-end |
+## Pipeline
 
-Optional / standalone: `cardnews-review` (Slack sign-off → approval manifest),
-`cardnews-notion` (legacy Notion save, no longer in the default chain).
+| # | Skill | Does | Gate |
+|---|-------|------|------|
+| 1 | *(topic pick)* | crawl `news.hada.io/rss/news`, pick the most viral on-brand item | — |
+| 2 | `cardnews-research` | pull the article + linked sources → core message, key points, hook, gaps | — |
+| 3 | `cardnews-copy` | write the render spec (`spec.json`) | **schema + char-count lint** |
+| 4 | `cardnews-image` | fill each card's image: **①** the topic's own article/links, **②** Google/Unsplash crawl | crawl fail → ask user |
+| 5 | `cardnews-render` | render 1080×1350 PNGs locally (Playwright), **surfers** theme | renderer built + Chromium |
+| 6 | `cardnews-wiki` | archive note + PNGs into the `llm-wiki` git repo and push | repo reachable |
+| 7 | `cardnews-autopublish` | Instagram + Threads carousel via the local publish runtime | **approval manifest** |
+| — | `cardnews-workflow` | orchestrate steps 1–7 end-to-end | — |
 
-Run the whole pipeline with `cardnews-workflow`, or invoke any individual skill to
-build your own workflow (render-only, copy + render, skip publish, etc.).
+**Optional / standalone**
+- `cardnews-review` — Slack sign-off → writes the approval manifest that
+  `cardnews-autopublish` requires. Not in the default chain.
+- `cardnews-notion` — legacy Notion save (superseded by `cardnews-wiki`).
+
+Run the whole thing with **`cardnews-workflow`**, or invoke any single skill to
+build your own flow: render-only, copy + render, archive without publishing, etc.
 
 ## Install
 
 ```bash
-claude plugin marketplace add /Users/kimjunho/Develop/cardnews
+claude plugin marketplace add https://github.com/AX-Surfers/card-news-mcp
 claude plugin install card-news@cardnews
 ```
 
-(After publishing to a git remote, point `marketplace add` at the repo URL instead.)
+(For local development, `claude plugin marketplace add /path/to/this/repo`.)
 
 ### Renderer setup (once)
 
@@ -40,14 +49,6 @@ The render step uses a bundled Playwright renderer. Build it and install Chromiu
 ```bash
 cd <plugin-root> && npm install && npm run build && npx playwright install chromium
 ```
-
-## Card types
-
-| Type | What's on it |
-|------|--------------|
-| `thumbnail` | Full-bleed background image, brand logo, category badge, big title |
-| `body` | Background image, page number badge, heading, body text, brand mark |
-| `closing` | Brand wordmark, tagline, call-to-action, save/like/follow icons |
 
 ## The renderer (`render-cli`)
 
@@ -61,15 +62,15 @@ Input spec shape:
 
 ```jsonc
 {
-  "id": "my-post",          // optional, used for output folder name
-  "theme": "default",       // optional, theme name or path
+  "id": "my-post",          // optional, used for the output folder name
+  "theme": "surfers",       // optional, theme name or path
   "cards": [
     { "type": "thumbnail", "index": 0, "title": "…", "category": "NEWS", "image_url": "https://…" },
     { "type": "body", "index": 1, "page_number": 1, "title": "…", "body": "…", "image_url": "https://…" },
-    { "type": "closing", "index": 2, "image_url": "https://…" }
+    { "type": "closing", "index": 2, "tagline": "…", "cta": "…", "image_url": "https://…" }
   ],
   "brand": {                // optional, overrides theme defaults per-call
-    "brand_name": "ACME",
+    "brand_name": "SURFERS",
     "tagline": "Follow for more",
     "cta": "Follow us <b>now</b>",
     "primary_color": "#0573F0"
@@ -82,25 +83,46 @@ Output (stdout JSON):
 ```jsonc
 {
   "id": "my-post",
-  "theme": "default",
+  "theme": "surfers",
   "rendered_cards": [
     { "index": 0, "type": "thumbnail", "path": "/abs/path/0_thumbnail.png", "base64": "data:image/png;base64,…" }
   ]
 }
 ```
 
+### Card types
+
+| Type | What's on it |
+|------|--------------|
+| `thumbnail` | Full-bleed background image, brand logo, category badge, big title |
+| `body` | Background image, page number badge, heading, body text, brand mark |
+| `closing` | Brand wordmark, tagline, call-to-action, save/like/follow icons |
+
+### Copy lint (schema gate)
+
+`cardnews-copy` only emits a spec once every card passes (default theme; tune per theme):
+
+| Rule | Limit |
+|------|-------|
+| exactly 1 `thumbnail` (first) + 1 `closing` (last) | required |
+| `body` cards | 1..N |
+| thumbnail `category` / `title` | ≤ 10 / ≤ 40 chars |
+| body `title` / `body` | ≤ 30 / ≤ 200 chars |
+| closing `tagline` / `cta` | ≤ 24 / ≤ 80 chars |
+| any title/body | non-empty |
+
 ## Themes
 
 Two themes ship in the box:
 
+- **`surfers`** — the SURFERS brand theme (blue `#0573F0`, Pretendard). Used by the
+  default pipeline.
 - **`default`** — clean, achromatic (grayscale). A neutral starting point.
-- **`surfers`** — example branded theme (blue + light-blue accents).
 
-Pick one with the `THEME` env var, or per-call with the `theme` field.
+Pick one with `spec.theme`, the `THEME` env var, or a `THEME_DIR` path.
 
-Want your own colors, fonts, and logo? See **[DESIGN.md](./DESIGN.md)** — it walks you
-through making a custom theme in a few minutes (no code, just a `theme.json` and three
-HTML files).
+Want your own colors, fonts, and logo? See **[DESIGN.md](./DESIGN.md)** — a custom
+theme is a `theme.json` + three HTML files + a few SVGs, no code.
 
 ```bash
 THEME_DIR=/path/to/my-theme
@@ -108,7 +130,7 @@ THEME_DIR=/path/to/my-theme
 
 ## Storage backends
 
-Choose with `STORAGE_BACKEND`:
+Render output location, chosen with `STORAGE_BACKEND`:
 
 | Value | Behavior | Extra setup |
 |-------|----------|-------------|
@@ -117,53 +139,66 @@ Choose with `STORAGE_BACKEND`:
 | `supabase` | Uploads to Supabase Storage, returns public URL | `npm i @supabase/supabase-js`, set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` |
 | `s3` | Uploads to S3 / Cloudflare R2, returns public URL | `npm i @aws-sdk/client-s3`, set `S3_*` vars |
 
-> **Publishing to IG/Threads needs public image URLs.** `cardnews-autopublish`
-> handles this itself by uploading the rendered PNGs to public Google Drive URLs at
-> publish time, so the `local` render backend is fine.
+> **Publishing doesn't need a public render backend.** `cardnews-autopublish`
+> uploads the rendered PNGs to public Google Drive URLs at publish time, so plain
+> `local` render output is fine. (IG/Threads only fetch images from public URLs.)
 
-### Cloudflare R2 (S3-compatible)
-
-R2 has a generous free tier (10 GB storage, **free egress**). It works through the
-`s3` backend — just point `S3_ENDPOINT` at R2:
-
-```bash
-STORAGE_BACKEND=s3
-S3_BUCKET=card-news
-S3_ENDPOINT=https://<account_id>.r2.cloudflarestorage.com
-S3_ACCESS_KEY_ID=<R2 token key>
-S3_SECRET_ACCESS_KEY=<R2 token secret>
-S3_REGION=auto
-S3_PUBLIC_BASE_URL=https://<your-r2-public-domain>   # r2.dev URL or custom domain
-```
-
-Enable public access (r2.dev or a custom domain) on the bucket so the returned URLs
-are publicly fetchable.
-
-## Configuration (env vars)
+## Renderer env vars
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `THEME` | `default` | Bundled theme name |
+| `THEME` | `default` | Bundled theme name (pipeline uses `surfers`) |
 | `THEME_DIR` | — | Path to an external custom theme |
 | `STORAGE_BACKEND` | `local` | `base64` / `local` / `supabase` / `s3` |
 | `OUTPUT_DIR` | `./card-news-out` | Where `local` saves files |
-| `SLACK_WEBHOOK_URL` | — | Slack Incoming Webhook for `cardnews-review` |
-| `IG_USER_ID` / `IG_ACCESS_TOKEN` | — | Instagram publish (Meta Graph API) |
-| `THREADS_USER_ID` / `THREADS_ACCESS_TOKEN` | — | Threads publish |
+
+## Publish runtime (`cardnews-autopublish`)
+
+Publishing runs local scripts in a self-contained runtime — **no hermes, no
+docker, no Notion**:
+
+```
+~/.local/share/cardnews/     ($CARDNEWS_DATA_ROOT to relocate)
+├── .env / .secrets/         tokens (600/700, gitignored, never printed)
+├── scripts/                 patched publish scripts
+├── work/                    scratch (PNGs, url lists, results)
+└── run_publish.sh           loads .env → runs verify / upload-public / publish
+```
+
+- **Credentials** (names only; values stay in `.env`/`.secrets` and are never
+  echoed): `INSTAGRAM_GRAPH_TOKEN` (or `META_GRAPH_ACCESS_TOKEN`) +
+  `INSTAGRAM_BUSINESS_ACCOUNT_ID`, `THREADS_ACCESS_TOKEN` + `THREADS_USER_ID`,
+  `GOOGLE_DRIVE_SERVICE_ACCOUNT_FILE`, `GOOGLE_DRIVE_PARENT_ID` (must be a **Shared
+  Drive** — the service account has 0 personal Drive quota).
+- **Approval gate.** Publish blocks unless an `approval.json` manifest asserts
+  `{ "approved": true, "approval_source": "...", "approved_at": "..." }`. Never
+  fabricate approval — get an explicit go, then write the manifest (or use
+  `cardnews-review`'s Slack sign-off to produce it).
+- **One platform or both.** `--platform {both,instagram,threads}` (default `both`).
+
+## Wiki archive (`cardnews-wiki`)
+
+Every piece is archived to the team's `llm-wiki` git repo
+(`~/Develop/llm-wiki`, remote `AX-Surfers/marketing-llm-wiki`, branch `main`) under
+`01-콘텐츠마케팅/카드뉴스/<id>/` as an Obsidian note (`## 관련` MOC links) plus the
+PNGs, then committed and pushed. This is the permanent home for produced content;
+it replaces the old Notion save.
 
 ## Troubleshooting
 
 - **Chromium download is large / blocked.** Set `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`
   during install and point Playwright at an existing Chrome/Chromium.
 - **Korean / CJK text looks wrong.** Themes load the Pretendard web font; ensure the
-  rendering machine has internet access on first render, or bundle a local font in your theme.
+  rendering machine has internet on first render, or bundle a local font in your theme.
+- **Google Drive upload 403.** `GOOGLE_DRIVE_PARENT_ID` must be a Shared Drive the
+  service account belongs to, not My Drive.
 
 ## Development
 
 ```bash
 npm install
 npm run typecheck
-npm run test:render default   # renders sample cards to ./card-news-out
+npm run test:render surfers   # renders sample cards to ./card-news-out
 npm run build
 node dist/render-cli.js spec.json --out ./card-news-out
 ```
