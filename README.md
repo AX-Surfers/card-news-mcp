@@ -6,18 +6,20 @@ A **Claude Code plugin** that turns a topic into a post-ready **Instagram-style 
 news** carousel (1080×1350 PNG) — thumbnail, body pages, and a closing
 call-to-action card — all themeable.
 
-It ships **8 composable skills** covering the full automation pipeline:
+It ships **composable skills** covering the full automation pipeline:
 
 | # | Skill | Does |
 |---|-------|------|
 | 1 | `cardnews-research` | gather + synthesize sources for a topic |
 | 2 | `cardnews-copy` | write the render spec — **schema + lint gated** |
-| 3 | `cardnews-image` | crawl background images (no generation fallback) |
-| 4 | `cardnews-render` | render 1080×1350 PNGs locally (Playwright) |
-| 5 | `cardnews-notion` | save the draft to a Notion document DB |
-| 6 | `cardnews-review` | post a Slack review request, then hard-wait |
-| 7 | `cardnews-publish` | publish IG + Threads carousel after approval |
+| 3 | `cardnews-image` | source images: priority 1 the topic's own article/links, priority 2 Google/Unsplash crawl |
+| 4 | `cardnews-render` | render 1080×1350 PNGs locally (Playwright), SURFERS theme |
+| 5 | `cardnews-wiki` | archive note + PNGs into the llm-wiki git repo and push |
+| 6 | `cardnews-autopublish` | publish IG + Threads carousel via the local runtime, approval-manifest gated |
 | — | `cardnews-workflow` | orchestrate all of the above end-to-end |
+
+Optional / standalone: `cardnews-review` (Slack sign-off → approval manifest),
+`cardnews-notion` (legacy Notion save, no longer in the default chain).
 
 Run the whole pipeline with `cardnews-workflow`, or invoke any individual skill to
 build your own workflow (render-only, copy + render, skip publish, etc.).
@@ -115,8 +117,9 @@ Choose with `STORAGE_BACKEND`:
 | `supabase` | Uploads to Supabase Storage, returns public URL | `npm i @supabase/supabase-js`, set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` |
 | `s3` | Uploads to S3 / Cloudflare R2, returns public URL | `npm i @aws-sdk/client-s3`, set `S3_*` vars |
 
-> **Publishing to IG/Threads needs public image URLs.** The `local` backend writes
-> files only — render with `STORAGE_BACKEND=s3` (or `supabase`) before `cardnews-publish`.
+> **Publishing to IG/Threads needs public image URLs.** `cardnews-autopublish`
+> handles this itself by uploading the rendered PNGs to public Google Drive URLs at
+> publish time, so the `local` render backend is fine.
 
 ### Cloudflare R2 (S3-compatible)
 

@@ -10,7 +10,10 @@ bundled renderer.
 
 ## Inputs
 - **spec.json** path (with `image_url` filled by cardnews-image)
-- **out dir** (optional): where PNGs land; default `./card-news-out`
+- **out dir** (optional): where PNGs land. **Default for the SURFERS pipeline:**
+  render straight into the llm-wiki piece folder so nothing lands in a stray dir:
+  `~/Develop/llm-wiki/01-콘텐츠마케팅/카드뉴스/<id>/`
+  (`<id>` = `spec.id`). cardnews-wiki then adds the note + commits/pushes.
 
 ## Prerequisite (once)
 
@@ -31,7 +34,7 @@ node "${CLAUDE_PLUGIN_ROOT}/dist/render-cli.js" <path/to/spec.json> --out <out-d
 
 - Prints a JSON result to stdout: `{ id, theme, rendered_cards: [{ index, type, path, base64 }] }`.
 - One PNG per card at 1080×1350.
-- Theme is taken from `spec.theme` (name or path); default is `default`.
+- Theme is taken from `spec.theme`; the SURFERS pipeline uses **`surfers`**.
 
 ## Storage backends (optional)
 
@@ -42,4 +45,4 @@ Set `STORAGE_BACKEND` before running to control where PNGs go:
 
 ## Output
 
-PNG paths (or public URLs). Hand to **cardnews-notion**.
+PNG paths (rendered into the llm-wiki piece folder). Hand to **cardnews-wiki**.

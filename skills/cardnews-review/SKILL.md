@@ -1,16 +1,18 @@
 ---
 name: cardnews-review
-description: Use after saving to Notion to post a Slack review request via webhook, then HARD STOP and wait - do not publish until the team approves. Step 6 of the card-news pipeline.
+description: Optional Slack sign-off before publishing - post a review request via webhook linking the llm-wiki entry, HARD STOP and wait, then on approval write the approval manifest that cardnews-autopublish requires. Not in the default chain; run when a team sign-off is wanted.
 ---
 
-# Card News — Slack Review + Hard Wait (Step 6)
+# Card News — Slack Review + Hard Wait (optional)
 
-Notify the team in Slack that a card news draft is ready for review, then **stop**.
-This step never proceeds to publish on its own.
+Notify the team in Slack that a card news draft is ready, then **stop**. This step
+never publishes on its own. Optional — the default workflow gates publish with an
+approval manifest directly; run this when a Slack sign-off is wanted first.
 
 ## Inputs
-- Notion page URL (from cardnews-notion)
+- llm-wiki entry path / pushed commit (from cardnews-wiki)
 - Topic / title
+- The autopublish work dir for this piece (`~/.local/share/cardnews/work/<id>/`)
 
 ## Prerequisite
 - `SLACK_WEBHOOK_URL` env var (Slack Incoming Webhook).
@@ -22,18 +24,27 @@ This step never proceeds to publish on its own.
 ```bash
 curl -sS -X POST "$SLACK_WEBHOOK_URL" \
   -H 'Content-Type: application/json' \
-  -d '{"text": "📰 카드뉴스 검수 요청\n제목: <TITLE>\nNotion: <NOTION_URL>\n검수 후 Notion 검수 상태를 *승인*으로 변경해 주세요."}'
+  -d '{"text": "📰 카드뉴스 검수 요청\n제목: <TITLE>\nllm-wiki: 01-콘텐츠마케팅/카드뉴스/<id> (commit <HASH>)\n검수 후 승인 회신해 주세요."}'
 ```
 
-Substitute `<TITLE>` and `<NOTION_URL>`. A 2xx with body `ok` means delivered.
+Substitute `<TITLE>`, `<id>`, `<HASH>`. A 2xx with body `ok` means delivered.
 
 2. **HARD WAIT.** After posting:
-   - Tell the user the review request was sent and that publishing is blocked until
-     the reviewer sets the Notion 검수 상태 to 승인 (approved).
-   - Do NOT call cardnews-publish automatically. End the step here.
-   - The user (or a later explicit run) starts **cardnews-publish**, which re-checks
-     the Notion approval state before publishing.
+   - Tell the user the review request was sent and that publishing is blocked
+     until the team approves.
+   - Do NOT publish automatically. End the step here.
+
+3. **On approval only.** When the user confirms the team approved, write the
+   approval manifest that `cardnews-autopublish` requires:
+
+```bash
+cat > ~/.local/share/cardnews/work/<id>/approval.json <<JSON
+{ "approved": true, "approval_source": "<approver>", "approved_at": "$(date -Iseconds)" }
+JSON
+```
+
+Then hand off to **cardnews-autopublish** (it reads this manifest as its gate).
 
 ## Output
-
-Confirmation that the Slack request was sent. Pipeline pauses for human review.
+Confirmation the Slack request was sent; on approval, an `approval.json` manifest
+ready for cardnews-autopublish.
