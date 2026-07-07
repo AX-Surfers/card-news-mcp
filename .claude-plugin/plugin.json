@@ -1,0 +1,19 @@
+{
+  "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
+  "name": "card-news",
+  "description": "Build Instagram-style card news (1080x1350 PNG) end-to-end: research, copy, image crawl, local render, Notion save, Slack review, and IG/Threads publish. Compose the 8 skills into your own workflow.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Rillmo",
+    "email": "maxman306@gmail.com"
+  },
+  "license": "MIT",
+  "keywords": [
+    "card-news",
+    "instagram",
+    "threads",
+    "social-media",
+    "content-automation",
+    "playwright"
+  ]
+}

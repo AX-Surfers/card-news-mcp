@@ -1,11 +1,17 @@
 {
   "name": "card-news-mcp",
   "version": "1.0.0",
-  "description": "MCP server that renders Instagram-style square card news (720x720 PNG) from text + images, with themeable branding and pluggable storage.",
+  "description": "Claude Code plugin: renders Instagram-style 1080x1350 card news (PNG) from text + images, with themeable branding and pluggable storage.",
   "type": "module",
-  "main": "dist/server.js",
+  "main": "dist/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "bin": {
-    "card-news-mcp": "dist/cli.js"
+    "card-news-render": "dist/render-cli.js"
   },
   "files": [
     "dist",
@@ -20,24 +26,22 @@
   },
   "scripts": {
     "build": "tsc",
-    "dev": "tsx watch src/cli.ts",
-    "start": "node dist/cli.js",
+    "dev": "tsx src/render-cli.ts",
+    "render": "node dist/render-cli.js",
     "typecheck": "tsc --noEmit",
     "test:render": "tsx src/test-render.ts",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
-    "mcp",
-    "model-context-protocol",
+    "claude-code",
+    "claude-code-plugin",
     "card-news",
     "instagram",
-    "image-generation",
     "playwright",
     "social-media"
   ],
   "license": "MIT",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.12.0",
     "handlebars": "^4.7.8",
     "playwright": "^1.49.0",
     "zod": "^3.23.8"

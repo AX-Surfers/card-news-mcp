@@ -9,7 +9,7 @@
 
   body {
     width: 720px;
-    height: 720px;
+    height: 900px;
     overflow: hidden;
     font-family: '{{font}}', 'Pretendard', 'Noto Sans KR', sans-serif;
     position: relative;
@@ -46,7 +46,7 @@
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 44px 44px 56px;
+    padding: 44px 44px 92px;
   }
 
   /* 상단 중앙 브랜드 이미지 */
@@ -83,22 +83,14 @@
   }
 
   .title {
-    font-size: 52px;
+    font-size: 64px;
     font-weight: 800;
     color: #ffffff;
-    line-height: 1.22;
-    letter-spacing: -0.035em;
+    line-height: 1.18;
+    letter-spacing: -0.04em;
     word-break: keep-all;
     white-space: pre-line;
-    text-shadow: 0 2px 16px rgba(0,0,0,0.5);
-  }
-
-  /* 옐로 액센트 밑줄 */
-  .accent-underline {
-    width: 56px;
-    height: 5px;
-    background: {{accent_color}};
-    border-radius: 3px;
+    text-shadow: 0 2px 20px rgba(0,0,0,0.55);
   }
 </style>
 </head>
@@ -119,7 +111,6 @@
     <div class="title-area">
       {{#if category}}<span class="category-badge">{{category}}</span>{{/if}}
       <h1 class="title">{{title}}</h1>
-      <div class="accent-underline"></div>
     </div>
   </div>
 </body>

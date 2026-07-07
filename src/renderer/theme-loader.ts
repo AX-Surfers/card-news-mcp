@@ -1,5 +1,5 @@
 import Handlebars from "handlebars";
-import { readFileSync, existsSync } from "fs";
+import { readFileSync, existsSync, readdirSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join, isAbsolute } from "path";
 
@@ -96,4 +96,22 @@ export function loadTheme(theme?: string): Theme {
 
   cache.set(dir, loaded);
   return loaded;
+}
+
+export interface ThemeSummary {
+  id: string;
+  name: string;
+}
+
+/** 번들된 themes/ 디렉터리에서 theme.json을 가진 테마 목록을 반환 */
+export function listThemes(): ThemeSummary[] {
+  if (!existsSync(BUNDLED_THEMES_DIR)) return [];
+  return readdirSync(BUNDLED_THEMES_DIR, { withFileTypes: true })
+    .filter((e) => e.isDirectory() && existsSync(join(BUNDLED_THEMES_DIR, e.name, "theme.json")))
+    .map((e) => {
+      const cfg = JSON.parse(
+        readFileSync(join(BUNDLED_THEMES_DIR, e.name, "theme.json"), "utf-8")
+      ) as { name?: string };
+      return { id: e.name, name: cfg.name ?? e.name };
+    });
 }

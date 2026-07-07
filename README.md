@@ -1,84 +1,76 @@
-# card-news-mcp
+# card-news
 
 > 🇰🇷 한국어 문서는 [README.ko.md](./README.ko.md) 를 보세요.
 
-An **MCP (Model Context Protocol) server** that turns text + background images into
-beautiful **Instagram-style square card news** (720×720 PNG) — thumbnail, body pages,
-and a closing call-to-action card — all themeable and ready to post.
+A **Claude Code plugin** that produces post-ready **Instagram-style card news**
+carousels (1080×1350 PNG) — from picking a topic all the way to publishing on
+Instagram and Threads. It ships the whole automation pipeline as **composable
+skills** you can run end-to-end or piece by piece.
 
-Give your AI agent (Claude Desktop, Cursor, or any MCP client) the ability to design
-carousel card news automatically.
+Built for **SURFERS** (AI·AX offline education) — the default chain picks an
+AI/LLM topic, writes beginner-friendly Korean copy, renders in the SURFERS brand
+theme, archives to a team wiki, and auto-publishes. Swap the theme and sources to
+retarget it to your own brand.
 
-<!-- Example output: 4-card carousel (thumbnail → body → body → closing) -->
+## Pipeline
 
-## What it does
+| # | Skill | Does | Gate |
+|---|-------|------|------|
+| 1 | *(topic pick)* | crawl `news.hada.io/rss/news`, pick the most viral on-brand item | — |
+| 2 | `cardnews-research` | pull the article + linked sources → core message, key points, hook, gaps | — |
+| 3 | `cardnews-copy` | write the render spec (`spec.json`) | **schema + char-count lint** |
+| 4 | `cardnews-image` | fill each card's image: **①** the topic's own article/links, **②** Google/Unsplash crawl | crawl fail → ask user |
+| 5 | `cardnews-render` | render 1080×1350 PNGs locally (Playwright), **surfers** theme | renderer built + Chromium |
+| 6 | `cardnews-wiki` | archive note + PNGs into the `llm-wiki` git repo and push | repo reachable |
+| 7 | `cardnews-autopublish` | Instagram + Threads carousel via the local publish runtime | **approval manifest** |
+| — | `cardnews-workflow` | orchestrate steps 1–7 end-to-end | — |
 
-You hand the tool a list of cards (title, body text, a background image URL), and it:
+**Optional / standalone**
+- `cardnews-review` — Slack sign-off → writes the approval manifest that
+  `cardnews-autopublish` requires. Not in the default chain.
+- `cardnews-notion` — legacy Notion save (superseded by `cardnews-wiki`).
 
-1. Fills a chosen **theme** (colors, fonts, logo) into HTML templates.
-2. Renders each card to a crisp **720×720 PNG** with a headless browser (Playwright).
-3. Returns the images as a **local file path**, a **remote URL**, or **base64** —
-   depending on the storage backend you pick.
+Run the whole thing with **`cardnews-workflow`**, or invoke any single skill to
+build your own flow: render-only, copy + render, archive without publishing, etc.
 
-No design skills needed. The AI writes the copy, you get post-ready images.
+## Install
 
-## Card types
-
-| Type | What's on it |
-|------|--------------|
-| `thumbnail` | Full-bleed background image, brand logo, category badge, big title |
-| `body` | Background image, page number badge, heading, body text, brand mark |
-| `closing` | Brand wordmark, tagline, call-to-action, save/like/follow icons |
-
-## Quick start
-
-### 1. Add it to your MCP client
-
-**Claude Desktop** — edit `claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "card-news": {
-      "command": "npx",
-      "args": ["-y", "card-news-mcp"],
-      "env": {
-        "THEME": "default",
-        "STORAGE_BACKEND": "local",
-        "OUTPUT_DIR": "./card-news-out"
-      }
-    }
-  }
-}
+```bash
+claude plugin marketplace add https://github.com/AX-Surfers/card-news-mcp
+claude plugin install card-news@cardnews
 ```
 
-Restart the client. That's it — the `render_card_news` tool is now available.
+(For local development, `claude plugin marketplace add /path/to/this/repo`.)
 
-> First run downloads a Chromium browser (~170 MB) used for rendering. This is a
-> one-time download. See [Troubleshooting](#troubleshooting) to reuse a system browser.
+### Renderer setup (once)
 
-### 2. Ask your agent
+The render step uses a bundled Playwright renderer. Build it and install Chromium:
 
-> "Make a 4-card Instagram carousel about the new GPT prompt guide, using these
-> background images: …"
+```bash
+cd <plugin-root> && npm install && npm run build && npx playwright install chromium
+```
 
-The agent calls `render_card_news` and you get PNG files in `./card-news-out`.
+## The renderer (`render-cli`)
 
-## The `render_card_news` tool
+The render step calls a small CLI that turns a spec JSON into PNGs:
 
-Input shape:
+```bash
+node dist/render-cli.js <spec.json> [--out <dir>]
+```
+
+Input spec shape:
 
 ```jsonc
 {
-  "id": "my-post",          // optional, used for output folder name
-  "theme": "default",       // optional, theme name or path (overrides THEME env)
+  "id": "my-post",          // optional, used for the output folder name
+  "theme": "surfers",       // optional, theme name or path
   "cards": [
     { "type": "thumbnail", "index": 0, "title": "…", "category": "NEWS", "image_url": "https://…" },
     { "type": "body", "index": 1, "page_number": 1, "title": "…", "body": "…", "image_url": "https://…" },
-    { "type": "closing", "index": 2, "image_url": "https://…" }
+    { "type": "closing", "index": 2, "tagline": "…", "cta": "…", "image_url": "https://…" }
   ],
   "brand": {                // optional, overrides theme defaults per-call
-    "brand_name": "ACME",
+    "brand_name": "SURFERS",
     "tagline": "Follow for more",
     "cta": "Follow us <b>now</b>",
     "primary_color": "#0573F0"
@@ -86,38 +78,59 @@ Input shape:
 }
 ```
 
-Output:
+Output (stdout JSON):
 
 ```jsonc
 {
   "id": "my-post",
-  "theme": "default",
+  "theme": "surfers",
   "rendered_cards": [
     { "index": 0, "type": "thumbnail", "path": "/abs/path/0_thumbnail.png", "base64": "data:image/png;base64,…" }
   ]
 }
 ```
 
+### Card types
+
+| Type | What's on it |
+|------|--------------|
+| `thumbnail` | Full-bleed background image, brand logo, category badge, big title |
+| `body` | Background image, page number badge, heading, body text, brand mark |
+| `closing` | Brand wordmark, tagline, call-to-action, save/like/follow icons |
+
+### Copy lint (schema gate)
+
+`cardnews-copy` only emits a spec once every card passes (default theme; tune per theme):
+
+| Rule | Limit |
+|------|-------|
+| exactly 1 `thumbnail` (first) + 1 `closing` (last) | required |
+| `body` cards | 1..N |
+| thumbnail `category` / `title` | ≤ 10 / ≤ 40 chars |
+| body `title` / `body` | ≤ 30 / ≤ 200 chars |
+| closing `tagline` / `cta` | ≤ 24 / ≤ 80 chars |
+| any title/body | non-empty |
+
 ## Themes
 
 Two themes ship in the box:
 
+- **`surfers`** — the SURFERS brand theme (blue `#0573F0`, Pretendard). Used by the
+  default pipeline.
 - **`default`** — clean, achromatic (grayscale). A neutral starting point.
-- **`surfers`** — example branded theme (blue + light-blue accents).
 
-Pick one with the `THEME` env var, or per-call with the `theme` field.
+Pick one with `spec.theme`, the `THEME` env var, or a `THEME_DIR` path.
 
-Want your own colors, fonts, and logo? See **[DESIGN.md](./DESIGN.md)** — it walks you
-through making a custom theme in a few minutes (no code, just a `theme.json` and three
-HTML files).
+Want your own colors, fonts, and logo? See **[DESIGN.md](./DESIGN.md)** — a custom
+theme is a `theme.json` + three HTML files + a few SVGs, no code.
 
-```json
-{ "env": { "THEME_DIR": "/path/to/my-theme" } }
+```bash
+THEME_DIR=/path/to/my-theme
 ```
 
 ## Storage backends
 
-Choose with `STORAGE_BACKEND`:
+Render output location, chosen with `STORAGE_BACKEND`:
 
 | Value | Behavior | Extra setup |
 |-------|----------|-------------|
@@ -126,84 +139,68 @@ Choose with `STORAGE_BACKEND`:
 | `supabase` | Uploads to Supabase Storage, returns public URL | `npm i @supabase/supabase-js`, set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` |
 | `s3` | Uploads to S3 / Cloudflare R2, returns public URL | `npm i @aws-sdk/client-s3`, set `S3_*` vars |
 
-### Cloudflare R2 (S3-compatible)
+> **Publishing doesn't need a public render backend.** `cardnews-autopublish`
+> uploads the rendered PNGs to public Google Drive URLs at publish time, so plain
+> `local` render output is fine. (IG/Threads only fetch images from public URLs.)
 
-R2 has a generous free tier (10 GB storage, **free egress**). It works through the
-`s3` backend — just point `S3_ENDPOINT` at R2:
-
-```bash
-STORAGE_BACKEND=s3
-S3_BUCKET=card-news
-S3_ENDPOINT=https://<account_id>.r2.cloudflarestorage.com
-S3_ACCESS_KEY_ID=<R2 token key>
-S3_SECRET_ACCESS_KEY=<R2 token secret>
-S3_REGION=auto
-S3_PUBLIC_BASE_URL=https://<your-r2-public-domain>   # r2.dev URL or custom domain
-```
-
-Enable public access (r2.dev or a custom domain) on the bucket so the returned URLs
-are publicly fetchable.
-
-## Configuration (env vars)
+## Renderer env vars
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `THEME` | `default` | Bundled theme name |
+| `THEME` | `default` | Bundled theme name (pipeline uses `surfers`) |
 | `THEME_DIR` | — | Path to an external custom theme |
 | `STORAGE_BACKEND` | `local` | `base64` / `local` / `supabase` / `s3` |
 | `OUTPUT_DIR` | `./card-news-out` | Where `local` saves files |
-| `MCP_TRANSPORT` | `stdio` | `stdio` (default) or `http` |
-| `PORT` | `3000` | HTTP transport port |
 
-## Running as an HTTP server (optional)
+## Publish runtime (`cardnews-autopublish`)
 
-Most users want stdio (the default). For remote/self-hosted use:
+Publishing runs local scripts in a self-contained runtime — **no hermes, no
+docker, no Notion**:
 
-```bash
-MCP_TRANSPORT=http npx card-news-mcp
-# → http://localhost:3000/mcp
 ```
+~/.local/share/cardnews/     ($CARDNEWS_DATA_ROOT to relocate)
+├── .env / .secrets/         tokens (600/700, gitignored, never printed)
+├── scripts/                 patched publish scripts
+├── work/                    scratch (PNGs, url lists, results)
+└── run_publish.sh           loads .env → runs verify / upload-public / publish
+```
+
+- **Credentials** (names only; values stay in `.env`/`.secrets` and are never
+  echoed): `INSTAGRAM_GRAPH_TOKEN` (or `META_GRAPH_ACCESS_TOKEN`) +
+  `INSTAGRAM_BUSINESS_ACCOUNT_ID`, `THREADS_ACCESS_TOKEN` + `THREADS_USER_ID`,
+  `GOOGLE_DRIVE_SERVICE_ACCOUNT_FILE`, `GOOGLE_DRIVE_PARENT_ID` (must be a **Shared
+  Drive** — the service account has 0 personal Drive quota).
+- **Approval gate.** Publish blocks unless an `approval.json` manifest asserts
+  `{ "approved": true, "approval_source": "...", "approved_at": "..." }`. Never
+  fabricate approval — get an explicit go, then write the manifest (or use
+  `cardnews-review`'s Slack sign-off to produce it).
+- **One platform or both.** `--platform {both,instagram,threads}` (default `both`).
+
+## Wiki archive (`cardnews-wiki`)
+
+Every piece is archived to the team's `llm-wiki` git repo
+(`~/Develop/llm-wiki`, remote `AX-Surfers/marketing-llm-wiki`, branch `main`) under
+`01-콘텐츠마케팅/카드뉴스/<id>/` as an Obsidian note (`## 관련` MOC links) plus the
+PNGs, then committed and pushed. This is the permanent home for produced content;
+it replaces the old Notion save.
 
 ## Troubleshooting
 
 - **Chromium download is large / blocked.** Set `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`
   during install and point Playwright at an existing Chrome/Chromium.
 - **Korean / CJK text looks wrong.** Themes load the Pretendard web font; ensure the
-  rendering machine has internet access on first render, or bundle a local font in your theme.
-
-## Using with a Hermes agent
-
-If you drive this through a Hermes agent (or any agent that manages its own MCP
-config), copy-paste the prompts below.
-
-### 1. Install / register the MCP
-
-> Register a new MCP server named `card-news`.
-> - Transport: **stdio** — command `npx`, args `["-y", "card-news-mcp"]`.
->   (If you self-host over the network instead, run `MCP_TRANSPORT=http npx card-news-mcp`
->   and register the URL `http://<host>:3000/mcp`.)
-> - Env: `THEME=default`, `STORAGE_BACKEND=local`, `OUTPUT_DIR=./card-news-out`.
->   (Use `STORAGE_BACKEND=supabase` or `s3` with the matching keys if you want public URLs.)
-> - After registering, list the tools and confirm `render_card_news` is available.
-
-### 2. Create a card-news carousel
-
-> Make a {{N}}-card Instagram carousel about **{{TOPIC}}** by calling `render_card_news`.
-> - Card 0 = `thumbnail` (category badge + a punchy title).
-> - Cards 1..N-2 = `body` (one key point each, with `page_number`).
-> - Last card = `closing` (follow / save CTA).
-> - Write all copy yourself; keep titles short and body text scannable.
-> - Background images: {{IMAGE_URLS or "pick fitting stock images"}}.
-> - Theme: `{{default | surfers | your-theme}}`.
-> Return the saved file paths (or URLs) for each card.
+  rendering machine has internet on first render, or bundle a local font in your theme.
+- **Google Drive upload 403.** `GOOGLE_DRIVE_PARENT_ID` must be a Shared Drive the
+  service account belongs to, not My Drive.
 
 ## Development
 
 ```bash
 npm install
 npm run typecheck
-npm run test:render default   # renders sample cards to ./card-news-out
+npm run test:render surfers   # renders sample cards to ./card-news-out
 npm run build
+node dist/render-cli.js spec.json --out ./card-news-out
 ```
 
 ## License

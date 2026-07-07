@@ -5,3 +5,6 @@ test-out/
 card-news-out/
 *.tgz
 .DS_Store
+.claude/
+.playwright-mcp/
+surfers-thumb-45.png
