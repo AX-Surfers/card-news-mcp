@@ -42,9 +42,17 @@ the old `cardnews-notion` step.
    - **핵심 메시지** (research core message).
    - **카드별 카피** — per-card title/body from spec.json, in order.
    - **이미지** — embed each PNG with Obsidian syntax `![[0_thumbnail.png]]` … in
-     card order (files sit next to the note).
+     card order (files sit next to the note). If **cardnews-render-video** made a
+     video thumbnail, embed the MP4 too (`![[0_thumbnail.mp4]]`, Obsidian plays it
+     inline) — put it right before its static PNG counterpart with a one-line note
+     on what the background is, and keep both files (the MP4 doesn't replace the PNG).
    - **출처** — research sources as links.
    - **갭/주의** — research gaps (what must not be overstated).
+   - **## 발행** and **## 댓글** — leave as placeholders here (`status: draft`,
+     "미발행") if publishing later; **cardnews-autopublish** fills these in and
+     flips `status` to `published` once the post is live — see its "Record the
+     result in the wiki" step. Don't fabricate a permalink/comment id before
+     that actually happens.
    - **## 관련** — REQUIRED. This vault is a linked MOC graph; a note with no
      `## 관련` links is an orphan. Always link:
      `[[카드뉴스]]` (the index/MOC), `[[콘텐츠 방향성]]`, `[[톤앤매너 가이드]]`,

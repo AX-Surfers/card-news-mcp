@@ -34,6 +34,8 @@ export const RenderCardNewsInputSchema = z.object({
   theme: z.string().optional(), // 테마 이름 또는 경로 (미지정 시 THEME env / default)
   cards: z.array(CardSchema).min(1),
   brand: BrandSchema,
+  // true면 <out>/<id>/ 서브폴더 없이 <out>/ 바로 밑에 저장 (--flat CLI 플래그와 동일)
+  flat: z.boolean().optional(),
 });
 
 export type RenderCardNewsInput = z.infer<typeof RenderCardNewsInputSchema>;
@@ -91,7 +93,8 @@ export async function renderCardNews(
     }
 
     const png = await renderHtmlToPng(html);
-    const stored = await storage.save(`${id}/${card.index}_${card.type}`, png);
+    const key = input.flat ? `${card.index}_${card.type}` : `${id}/${card.index}_${card.type}`;
+    const stored = await storage.save(key, png);
     results.push({ index: card.index, type: card.type, ...stored });
   }
 

@@ -6,18 +6,21 @@ import { closeBrowser } from "./renderer/playwright.js";
 /**
  * Render card-news PNGs from a spec JSON file.
  *
- *   node dist/render-cli.js <spec.json> [--out <dir>]
+ *   node dist/render-cli.js <spec.json> [--out <dir>] [--flat]
  *
  * spec.json matches RenderCardNewsInputSchema: { id?, theme?, cards[], brand? }.
  * Result is printed to stdout as JSON. Use --out to override the local output
- * directory (sets OUTPUT_DIR for the local storage backend).
+ * directory (sets OUTPUT_DIR for the local storage backend). Use --flat to
+ * write PNGs directly into <out>/ instead of nesting under <out>/<id>/.
  */
-function parseArgs(argv: string[]): { specPath?: string; out?: string } {
-  const result: { specPath?: string; out?: string } = {};
+function parseArgs(argv: string[]): { specPath?: string; out?: string; flat?: boolean } {
+  const result: { specPath?: string; out?: string; flat?: boolean } = {};
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === "--out") {
       result.out = argv[++i];
+    } else if (arg === "--flat") {
+      result.flat = true;
     } else if (!arg.startsWith("--") && !result.specPath) {
       result.specPath = arg;
     }
@@ -26,10 +29,10 @@ function parseArgs(argv: string[]): { specPath?: string; out?: string } {
 }
 
 async function main() {
-  const { specPath, out } = parseArgs(process.argv.slice(2));
+  const { specPath, out, flat } = parseArgs(process.argv.slice(2));
 
   if (!specPath) {
-    console.error("Usage: render-cli <spec.json> [--out <dir>]");
+    console.error("Usage: render-cli <spec.json> [--out <dir>] [--flat]");
     process.exit(1);
   }
 
@@ -44,6 +47,7 @@ async function main() {
   }
 
   const parsed = RenderCardNewsInputSchema.parse(JSON.parse(raw));
+  if (flat) parsed.flat = true;
   const result = await renderCardNews(parsed);
 
   // 결과 JSON은 stdout 전용 (로그는 stderr)

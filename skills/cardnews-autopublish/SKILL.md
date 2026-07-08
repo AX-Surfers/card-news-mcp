@@ -28,10 +28,14 @@ for local paths; they now live in a self-contained runtime:
 - Runtime set up: `~/.local/share/cardnews/.env` filled (see `.env.example`) and
   `.secrets/` populated. If `.env` is missing, STOP — tell the user to set it up.
 - Rendered PNGs from `cardnews-render` (`.../card-news-out/<id>/*.png`, named
-  `0_*.png … N_*.png` so carousel order = filename order).
+  `0_*.png … N_*.png` so carousel order = filename order). A thumbnail rendered
+  as MP4 by **cardnews-render-video** slots into the same order (`0_thumbnail.mp4`)
+  — see "Media types" below for how that gets uploaded and recognized.
 - **Approval manifest** JSON asserting an explicit sign-off (see gate below).
 - Caption/text file(s) for whichever platform(s) you're publishing to: IG caption
   file, and/or Threads body text file.
+- If `spec.json` has a `pinned_comment` field (written by **cardnews-copy**), stage
+  it for the post-publish comment step — see "Pinned comment" below.
 
 ## One platform or both
 `post_card_news_social.py` takes `--platform {both,instagram,threads}` (default
@@ -65,6 +69,47 @@ IG and Threads fetch each carousel image from a public URL at publish time. Loca
 PNGs can't be posted, so the pipeline uploads them to public Google Drive URLs
 (`google_drive_public_upload.py`, anyone-with-link reader) and feeds those.
 
+## Media types: image + video in one carousel
+
+`meta_social_publish.py`'s carousel commands (both IG and Threads) accept a
+**mix** of image and video items in one `--image-urls-file` (name kept for
+backward compat; it's really a media-urls file). Detection rule per line:
+
+- URL path ends `.mp4`/`.mov`/`.m4v`/`.webm` → treated as a video item.
+- Otherwise → image item.
+- **Override for extensionless hosts** (Google Drive's `uc?id=...` has no
+  extension and would misclassify a video as an image): prefix the line with
+  `video ` or `image ` — e.g. `video https://drive.google.com/uc?id=XXXX`.
+
+Video items go through an async transcode on both platforms, so their container
+polling uses a longer timeout than images: `INSTAGRAM_VIDEO_CONTAINER_TIMEOUT`
+and `THREADS_VIDEO_CONTAINER_TIMEOUT` (both default 600s, override via env if a
+clip is long or the API is slow).
+
+**Google Drive upload gotcha:** `run_publish.sh upload-public` (→
+`google_drive_public_upload.py upload-from-dir`) defaults to `--glob '*.png'`,
+so an `.mp4` in the same directory is silently skipped. Upload it as its own
+call with an explicit glob, then splice its URL into the urls file with the
+`video ` prefix:
+
+```bash
+# PNGs (default glob) — everything except the video
+bash "$RT/run_publish.sh" upload-public --dir "$DIR" --glob '*.png' > "$W/upload_pngs.json"
+# the video, separately (glob targets just that file)
+bash "$RT/run_publish.sh" upload-public --dir "$DIR" --glob '0_thumbnail.mp4' > "$W/upload_video.json"
+```
+Then build the urls file with the video's line first (or wherever its card
+index sits) and `video ` prefixed — see the assembly snippet in Procedure step 2.
+
+**Verify the video URL isn't an interstitial before publishing** — large files on
+Drive can serve a virus-scan warning page instead of the raw file:
+```bash
+curl -sI -L "$VIDEO_URL" | grep -i content-type   # must read: content-type: video/mp4
+```
+If it doesn't, host the file elsewhere (S3/Supabase backend, or Drive's
+`webContentLink` which already has `&export=download`) instead of retrying the
+same URL.
+
 ## Procedure
 
 ```bash
@@ -74,7 +119,8 @@ ID=<id>;  DIR=/path/to/card-news-out/$ID;  W="$RT/work/$ID";  mkdir -p "$W"
 # 1. verify credentials (no posting). Aborts if tokens don't load.
 bash "$RT/run_publish.sh" verify
 
-# 2. upload rendered PNGs → public URLs (ordered by filename)
+# 2. upload rendered media → public URLs (ordered by filename).
+#    Plain-image pieces: one call covers everything.
 bash "$RT/run_publish.sh" upload-public --dir "$DIR" > "$W/upload.json"
 python3 - "$W/upload.json" "$W" <<'PY'
 import json,sys
@@ -84,6 +130,9 @@ items=sorted(items,key=lambda x:x.get("name",""))
 urls="\n".join(x["public_direct_url"] for x in items)+"\n"
 open(w+"/ig_urls.txt","w").write(urls); open(w+"/threads_urls.txt","w").write(urls)
 PY
+#    If the piece has a video thumbnail (0_thumbnail.mp4 from cardnews-render-video),
+#    upload it separately (default glob skips non-.png) and prefix its line "video "
+#    when splicing into ig_urls.txt / threads_urls.txt — see "Media types" above.
 
 # 3. stage caption + text (write your copy to these files)
 #    $W/ig_caption.txt   $W/threads_text.txt
@@ -109,12 +158,44 @@ To publish Instagram only, drop the `--threads-*` args and pass `--platform inst
 (symmetric for `--platform threads`). `run_publish.sh verify` also takes an optional
 platform arg: `verify instagram` / `verify threads` / `verify` (both, default).
 
+## Pinned comment (post-publish, Instagram)
+
+If `spec.json` has a `pinned_comment` (written during **cardnews-copy**, not
+improvised here), post it right after the IG carousel publishes — reuse the same
+media id `publish_result.json` returns:
+
+```bash
+bash "$RT/run_publish.sh" raw meta_social_publish.py comment-instagram \
+  --media-id "<published-media-id>" \
+  --message-file "$W/pinned_comment.txt"
+```
+
+**The Graph API cannot pin it** — there is no pin endpoint. Posting via API only
+gets the comment onto the thread; tell the user to open the post in the IG app
+and long-press → 고정 (max 3 pinned comments per post) if they want it pinned.
+Record both the comment id and the pin status (done/pending) in the wiki note.
+
+## Record the result in the wiki
+
+Publishing isn't done until the piece's wiki note (from **cardnews-wiki**)
+reflects it — update, don't leave the note saying "draft" after a real post:
+- flip frontmatter `status: draft` → `status: published`
+- add a `## 발행` section with the permalink(s), account, date, and carousel shape
+- add a `## 댓글` section with the pinned-comment text, its comment id, and pin
+  status (manual step, per above)
+- commit + push (same repo/branch as the original archive commit)
+
 ## Operational rules
 1. Secret values never appear in logs/output.
 2. Multi-slide card news is always posted as a carousel, on each targeted platform.
-3. Every carousel image must be a public URL.
+3. Every carousel item (image or video) must be a public URL, verified reachable
+   with the right content-type before the publish call.
 4. No publish unless the approval manifest asserts `approved: true`.
-5. Publish result recorded as JSON (`publish_result.json`).
+5. Publish result recorded as JSON (`publish_result.json`) **and** mirrored into
+   the wiki note (see above) — the JSON alone is not the source of record.
+6. Pinning a comment is always a manual, human, in-app step — never claim "pinned"
+   in a report; say "commented, pin pending" until the user confirms.
 
 ## Output
-`publish_result.json` (IG + Threads creation/publish ids). Report the permalinks.
+`publish_result.json` (IG + Threads creation/publish ids, plus the comment id if
+posted). Report the permalinks and the wiki commit hash.

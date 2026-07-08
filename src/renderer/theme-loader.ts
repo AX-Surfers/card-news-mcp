@@ -38,6 +38,8 @@ export interface Theme {
     thumbnail: HandlebarsTemplateDelegate;
     body: HandlebarsTemplateDelegate;
     closing: HandlebarsTemplateDelegate;
+    /** 배경 없는 오버레이 전용 (영상 배경 카드 합성용). 테마에 *-overlay.html 없으면 undefined */
+    thumbnailOverlay?: HandlebarsTemplateDelegate;
   };
 }
 
@@ -91,6 +93,9 @@ export function loadTheme(theme?: string): Theme {
       thumbnail: compile("thumbnail.html"),
       body: compile("body.html"),
       closing: compile("closing.html"),
+      thumbnailOverlay: existsSync(join(dir, "thumbnail-overlay.html"))
+        ? compile("thumbnail-overlay.html")
+        : undefined,
     },
   };
 

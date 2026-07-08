@@ -11,11 +11,13 @@
     }
   },
   "bin": {
-    "card-news-render": "dist/render-cli.js"
+    "card-news-render": "dist/render-cli.js",
+    "card-news-render-overlay": "dist/render-overlay-cli.js"
   },
   "files": [
     "dist",
     "themes",
+    "scripts",
     "README.md",
     "README.ko.md",
     "DESIGN.md",
@@ -28,6 +30,7 @@
     "build": "tsc",
     "dev": "tsx src/render-cli.ts",
     "render": "node dist/render-cli.js",
+    "render:overlay": "node dist/render-overlay-cli.js",
     "typecheck": "tsc --noEmit",
     "test:render": "tsx src/test-render.ts",
     "prepublishOnly": "npm run build"

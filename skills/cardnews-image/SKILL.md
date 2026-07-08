@@ -36,7 +36,15 @@ landscape image that matches the card's message.
    that fits the card. Keep direct CDN URLs (public, no auth).
 3. **Fall back to priority 2** (Google/Unsplash crawl) only if no source image
    fits that card.
-4. Validate the chosen URL is publicly reachable (GET 200, image content-type).
+4. Validate the chosen URL is publicly reachable (GET 200, image content-type):
+   ```bash
+   for u in "${urls[@]}"; do
+     curl -s -o /dev/null -w "%{http_code} %{content_type}  $u\n" "$u"
+   done
+   ```
+   Every line must start `200 image/...`. Anything else (redirect, 4xx, `text/html`)
+   means that URL can't be used as-is — try another candidate or fall back to
+   priority 2.
 5. Write the URL into that card's `image_url`.
 
 ## On failure (no generation)

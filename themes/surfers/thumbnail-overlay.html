@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=720, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body { background: transparent; }
+
+  body {
+    width: 720px;
+    height: 900px;
+    overflow: hidden;
+    font-family: '{{font}}', 'Pretendard', 'Noto Sans KR', sans-serif;
+    position: relative;
+  }
+
+  /* thumbnail.html과 동일한 오버레이 — 배경 이미지 레이어만 뺀 버전.
+     영상 배경 위에 얹을 투명 PNG로 스크린샷(omitBackground)한다. */
+  .overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba(11,18,32,0.30) 0%,
+      rgba(11,18,32,0.05) 22%,
+      rgba(11,18,32,0.05) 45%,
+      rgba(11,18,32,0.60) 72%,
+      rgba(11,18,32,0.92) 100%
+    );
+    z-index: 1;
+  }
+
+  .content {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 44px 44px 92px;
+  }
+
+  .brand-top {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .brand-top img {
+    height: 30px;
+    width: auto;
+    object-fit: contain;
+  }
+
+  .title-area {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .category-badge {
+    display: inline-flex;
+    align-items: center;
+    background: {{primary_color}};
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 8px 18px;
+    border-radius: 8px;
+    width: fit-content;
+    letter-spacing: 0.06em;
+  }
+
+  .title {
+    font-size: 64px;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.18;
+    letter-spacing: -0.04em;
+    word-break: keep-all;
+    white-space: pre-line;
+    text-shadow: 0 2px 20px rgba(0,0,0,0.55);
+  }
+</style>
+</head>
+<body>
+  <div class="overlay"></div>
+
+  <div class="content">
+    <div class="brand-top">
+      <img src="{{brand_image}}" alt="{{brand_name}}">
+    </div>
+
+    <div class="title-area">
+      {{#if category}}<span class="category-badge">{{category}}</span>{{/if}}
+      <h1 class="title">{{title}}</h1>
+    </div>
+  </div>
+</body>
+</html>
